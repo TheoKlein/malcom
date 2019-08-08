@@ -27,8 +27,9 @@ class CybercrimeTracker(Feed):
         url = Url(url=url, tags=[dict['description'].lower()])
 
         evil = {}
+        dict['pubDate'] = dict['pubDate'].split('+')[0]
         evil['description'] = "%s CC" % (dict['description'].lower())
-        evil['date_added'] = datetime.datetime.strptime(dict['pubDate'], "%d-%m-%Y")
+        evil['date_added'] = datetime.datetime.strptime(dict['pubDate'], "%a, %d %b %Y %X ")
         evil['id'] = md5.new(dict['title']+dict['pubDate']+dict['description']).hexdigest()
         evil['source'] = self.name
 
