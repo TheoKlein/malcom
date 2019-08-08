@@ -24,10 +24,8 @@ class Alexa(Feed):
         z = zipfile.ZipFile(StringIO(r.content))
         lines = z.read('top-1m.csv').split('\n')
 
-        for line in lines:
-            num, domain = line.split(',')
-            if int(num) > 10000:
-                break
+        for line in lines[:-1]:
+            _, domain = line.split(',')
             self.analyze(domain)
 
     def analyze(self, domain):
