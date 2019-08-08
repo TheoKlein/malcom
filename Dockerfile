@@ -14,21 +14,22 @@ RUN cd /opt && \
 	cd scapy && \
 	python setup.py install
 
-# get malcom
-RUN cd /opt && \
-	git clone https://github.com/TheoKlein/malcom.git malcom
+COPY ./requirements.txt /opt/malcom/requirements.txt
+
+# set working dir, install python modules and launch webserver
+WORKDIR /opt/malcom
+EXPOSE 8080
 
 # get maxmind geoip database
 ADD http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz /opt/malcom/Malcom/auxiliary/geoIP/GeoLite2-City.mmdb.gz
 RUN cd /opt/malcom/Malcom/auxiliary/geoIP && \
 	gunzip -d GeoLite2-City.mmdb.gz && \
 	mv GeoLite2-City.mmdb GeoIP2-City.mmdb
+RUN pip install -r requirements.txt
 
-# set working dir, install python modules and launch webserver
-WORKDIR /opt/malcom
-EXPOSE 8080
-RUN pip install -r requirements.txt && \
-    cp malcom.conf.example malcom.conf && \
+COPY ./ /opt/malcom
+
+RUN cp malcom.conf.example malcom.conf && \
     sed -i s/scheduler\ =\ false/scheduler\ =\ true/g malcom.conf && \
     echo service mongodb start > start.sh && \
     echo service redis-server start >> start.sh && \
