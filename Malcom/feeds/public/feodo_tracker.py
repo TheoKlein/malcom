@@ -28,12 +28,11 @@ class FeodoTracker(Feed):
     def update(self):
         r = requests.get(self.source, verify=False)
         f = r.text.replace('\r', '').split('\n')
-        for line in f[9:]:
-            first_seen, dst_ip, dst_port, last_online, malware = line.split(',')
+        for line in f[9:-1]:
+            first_seen, dst_ip, _, last_online, malware = line.split(',')
             self.analyze({
                 'first_seen': first_seen,
                 'dst_ip': dst_ip,
-                'dst_port': dst_port,
                 'last_online': last_online,
                 'malware': malware
             })
@@ -49,7 +48,7 @@ class FeodoTracker(Feed):
         evil['host'] = dict['dst_ip']
         evil['version'] = dict['malware']
         evil['description'] = FeodoTracker.descriptions[dict['malware']]
-        evil['id'] = md5.new(dict['description']).hexdigest()
+        evil['id'] = md5.new(evil['host'] + evil['description']).hexdigest()
         evil['source'] = self.name
 
         if toolbox.is_ip(evil['host']):
