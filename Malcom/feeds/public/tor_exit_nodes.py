@@ -1,6 +1,6 @@
-import urllib2
 import md5
 
+import requests
 from Malcom.feeds.core import Feed
 import Malcom.auxiliary.toolbox as toolbox
 from Malcom.model.datatypes import Ip
@@ -16,15 +16,21 @@ class TorExitNodes(Feed):
         self.description = "List of Tor exit nodes"
 
     def update(self):
-        feed = urllib2.urlopen(self.source).read()
+        feed = requests.get(self.source, verify=False)
+
+        if feed.status_code != 200:
+            self.status = feed.text
+            return False
+
+        feed = feed.text
+        if feed.find('Umm... You can only fetch the data every 30 minutes'):
+            self.status = "Burn out. Can only fetch the data every 30 minutes."
+            return False
 
         start = feed.find('<!-- __BEGIN_TOR_NODE_LIST__ //-->') + len('<!-- __BEGIN_TOR_NODE_LIST__ //-->')
         end = feed.find('<!-- __END_TOR_NODE_LIST__ //-->')
 
         feed = feed[start:end].replace('\n', '').replace('<br />', '\n').replace('&gt;', '>').replace('&lt;', '<').split('\n')
-
-        if len(feed) > 10:
-            self.status = "OK"
 
         for line in feed:
             self.analyze(line)
