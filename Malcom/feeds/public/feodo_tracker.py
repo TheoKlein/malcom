@@ -1,6 +1,8 @@
 import datetime
 import re
 import md5
+import requests
+from StringIO import StringIO
 
 import Malcom.auxiliary.toolbox as toolbox
 from Malcom.model.datatypes import Ip, Hostname
@@ -10,50 +12,50 @@ from Malcom.feeds.core import Feed
 class FeodoTracker(Feed):
 
     descriptions = {
-                'A': "Hosted on compromised webservers running an nginx proxy on port 8080 TCP forwarding all botnet traffic to a tier 2 proxy node. Botnet traffic usually directly hits these hosts on port 8080 TCP without using a domain name.",
-                'B': "Hosted on servers rented and operated by cybercriminals for the exclusive purpose of hosting a Feodo botnet controller. Usually taking advantage of a domain name within ccTLD .ru. Botnet traffic usually hits these domain names using port 80 TCP.",
-                'C': "Successor of Feodo, completely different code. Hosted on the same botnet infrastructure as Version A (compromised webservers, nginx on port 8080 TCP or port 7779 TCP, no domain names) but using a different URL structure. This Version is also known as Geodo.",
-                'D': "Successor of Cridex. This version is also known as Dridex",
-                }
-
-    variants = {
-                'A': "Feodo",
-                'B': "Feodo",
-                'C': "Geodo",
-                'D': "Dridex",
-                }
+        'Cridex': "also known as Bugat was an ebanking Trojan active until around 2013. This variant is not active anymore.",
+        'Feodo': "is a successor of the Cridex ebanking Trojan that first appeared in 2010. This variant is not active anymore.",
+        'Geodo': "is a successor of the Feodo ebanking Trojan that first appeared in 2014. This variant is commonly also known as Emotet. This variant is not active anymore.",
+        'Dridex': "is a successor of the Cridex ebanking Trojan. It first appeared in 2011 and is still very active as of today (2018). There are speculations that the botnet masters behind the ebanking Trojan Dyre moved their operation over to Dridex.",
+        "Heodo": "is a successor of the Geodo (aka Emotet). It first appeared in March 2017 and is also commonly known as Emotet. While it was initally used to commit ebanking fraud, it later turned over to a Pay-Per-Install (PPI)-like botnet which is propagating itself through compromised email credentials.",
+        "TrickBot": "has no code base with Emotet. However, TrickBot usually gets dropped by Emotet for lateral movement and to drop additional malware (such as Ryuk ransomware)."
+    }
 
     def __init__(self):
         super(FeodoTracker, self).__init__()
-        self.source = "https://feodotracker.abuse.ch/feodotracker.rss"
-        self.description = "Feodo Tracker RSS Feed. This feed shows the latest twenty Feodo C2 servers which Feodo Tracker has identified."
+        self.source = "https://feodotracker.abuse.ch/downloads/ipblocklist.csv"
+        self.description = "Feodo Tracker RSS Feed."
 
     def update(self):
-        for dict in self.update_xml('item', ["title", "link", "description", "guid"]):
-            self.analyze(dict)
+        r = requests.get(self.source, verify=False)
+        f = r.text.replace('\r', '').split('\n')
+        for line in f[9:]:
+            first_seen, dst_ip, dst_port, last_online, malware = line.split(',')
+            self.analyze({
+                'first_seen': first_seen,
+                'dst_ip': dst_ip,
+                'dst_port': dst_port,
+                'last_online': last_online,
+                'malware': malware
+            })
 
     def analyze(self, dict):
         evil = dict
 
-        date_string = re.search(r"\((?P<datetime>[\d\- :]+)\)", dict['title']).group('datetime')
         try:
-            evil['date_added'] = datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
+            evil['date_added'] = datetime.datetime.strptime(dict['first_seen'], "%Y-%m-%d %H:%M:%S")
         except ValueError:
             pass
 
-        g = re.match(r'^Host: (?P<host>.+), Version: (?P<version>\w)', dict['description'])
-        g = g.groupdict()
-        evil['host'] = g['host']
-        evil['version'] = g['version']
-        evil['description'] = FeodoTracker.descriptions[g['version']]
+        evil['host'] = dict['dst_ip']
+        evil['version'] = dict['malware']
+        evil['description'] = FeodoTracker.descriptions[dict['malware']]
         evil['id'] = md5.new(dict['description']).hexdigest()
         evil['source'] = self.name
-        del evil['title']
 
         if toolbox.is_ip(evil['host']):
-            elt = Ip(ip=evil['host'], tags=[FeodoTracker.variants[g['version']]])
+            elt = Ip(ip=evil['host'], tags=[dict['malware']])
         elif toolbox.is_hostname(evil['host']):
-            elt = Hostname(hostname=evil['host'], tags=[FeodoTracker.variants[g['version']]])
+            elt = Hostname(hostname=evil['host'], tags=[dict['malware']])
 
         elt.seen(first=evil['date_added'])
         elt.add_evil(evil)

@@ -24,7 +24,7 @@ class CybercrimeTracker(Feed):
         except Exception:
             return  # if no URL is found, bail
 
-        url = Url(url=url, tags=[dict['description'].lower()])
+        url = Url(url=url, tags=['evil'])
 
         evil = {}
         dict['pubDate'] = dict['pubDate'].split('+')[0]
