@@ -23,10 +23,11 @@ class Alienvault(Feed):
 
         lines = res.text.split('\n')
         for line in lines:
-            self.analyze({
-                'ip': line.split('#')[0],
-                'score': line.split('#')[2]
-            })
+            if line:
+                self.analyze({
+                    'ip': line.split('#')[0],
+                    'score': line.split('#')[2]
+                })
         return True
 
     def analyze(self, dict):
