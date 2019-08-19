@@ -10,7 +10,7 @@ auth = false
 [feeds]
 activated = true
 feeds_dir = feeds
-scheduler = false
+scheduler = true
 exports_dir = exports
 
 [analytics]
