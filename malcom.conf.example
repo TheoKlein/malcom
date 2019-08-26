@@ -15,7 +15,7 @@ exports_dir = exports
 
 [analytics]
 activated = true
-max_workers = 12
+max_workers = 20
 skip_tags = whitelisted
 
 [sniffer]
