@@ -233,7 +233,7 @@ class Analytics(Process):
 
             self.active_lock.acquire()
             if self.run_analysis:
-                self.process(10000)
+                self.process(1000000)
             self.active_lock.release()
 
             if self.once:
