@@ -8,9 +8,9 @@ listen_port = 8080
 auth = false
 
 [feeds]
-activated = true
+activated = false
 feeds_dir = feeds
-scheduler = true
+scheduler = false
 exports_dir = exports
 
 [analytics]
