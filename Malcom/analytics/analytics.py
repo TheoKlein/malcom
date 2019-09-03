@@ -233,7 +233,7 @@ class Analytics(Process):
 
             self.active_lock.acquire()
             if self.run_analysis:
-                self.process(1000000)
+                self.process(10000)
             self.active_lock.release()
 
             if self.once:
@@ -291,48 +291,63 @@ class Analytics(Process):
         self.workers = []
         self.work_done = False
 
+        query = {'next_analysis': {'$lt': datetime.datetime.utcnow()}, 'tags': {"$in": ['search']}}
+        targets = self.data.elements.find(query).count()
+
         query = {'next_analysis': {'$lt': datetime.datetime.utcnow()}}
         if self.setup['SKIP_TAGS']:
             query['tags'] = {"$nin": self.setup['SKIP_TAGS']}
+        targets += self.data.elements.find(query).count()
 
-        results = [r for r in self.data.elements.find(query)[:batch_size]]
-        total_elts = 0
+        if targets > 0:
+            for i in range(0, targets, batch_size):
+                query = {'next_analysis': {'$lt': datetime.datetime.utcnow()}, 'tags': {"$in": ['search']}}
+                results = [r for r in self.data.elements.find(query)]
 
-        if len(results) > 0:
+                query = {'next_analysis': {'$lt': datetime.datetime.utcnow()}}
+                if self.setup['SKIP_TAGS']:
+                    query['tags'] = {"$nin": self.setup['SKIP_TAGS']}
 
-            self.active = True
+                results += [r for r in self.data.elements.find(query).skip(i).limit(batch_size)]
+                total_elts = 0
 
-            # start workers
-            self.queue_lock = Lock()
-            workers = []
+                if len(results) > 0:
+
+                    self.active = True
+
+                    # start workers
+                    self.queue_lock = Lock()
+                    workers = []
+                    for i in range(self.max_workers):
+                        w = Worker(name="Worker %s" % i, queue_lock=self.queue_lock, hostname_lock=self.hostname_lock)
+                        w.engine = self
+                        w.start()
+                        workers.append(w)
+
+                    self.workers = workers
+
+                    # add elements to Queue
+                    for elt in results:
+                        self.elements_queue.put(pickle.dumps(elt))
+                        total_elts += 1
+
+                    self.elements_queue.join()
+
+                    debug_output("Workers have joined")
+
+                    # regroup ASN analytics and ADNS analytics
+                    if self.run_analysis:
+                        self.bulk_functions()
+                        self.active = False
+
             for i in range(self.max_workers):
-                w = Worker(name="Worker %s" % i, queue_lock=self.queue_lock, hostname_lock=self.hostname_lock)
-                w.engine = self
-                w.start()
-                workers.append(w)
-
-            self.workers = workers
-
-            # add elements to Queue
-            for elt in results:
-                self.elements_queue.put(pickle.dumps(elt))
-                total_elts += 1
-
-            for i in range(self.max_workers):
+                debug_output("PUT BAIL")
                 self.elements_queue.put(pickle.dumps("BAIL"))
-
             self.elements_queue.join()
 
-            debug_output("Workers have joined")
+            now = datetime.datetime.utcnow()
 
-            # regroup ASN analytics and ADNS analytics
+            if total_elts > 0:
+                debug_output("Analyzed %s elements in {}".format(total_elts, str(now-then)))
             if self.run_analysis:
-                self.bulk_functions()
-                self.active = False
-
-        now = datetime.datetime.utcnow()
-
-        if total_elts > 0:
-            debug_output("Analyzed %s elements in {}".format(total_elts, str(now-then)))
-        if self.run_analysis:
-            self.notify_progress("Inactive")
+                self.notify_progress("Inactive")

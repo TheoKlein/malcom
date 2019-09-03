@@ -8,19 +8,19 @@ listen_port = 8080
 auth = false
 
 [feeds]
-activated = false
+activated = true
 feeds_dir = feeds
-scheduler = false
+scheduler = true
 exports_dir = exports
 
 [analytics]
 activated = true
-max_workers = 20
+max_workers = 16
 skip_tags = whitelisted
 
 [sniffer]
 stealth = true
-activated = true
+activated = false
 network = true
 sniffer_dir = sniffer/captures
 modules_dir = sniffer/modules
