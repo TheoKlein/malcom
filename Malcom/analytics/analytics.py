@@ -57,9 +57,9 @@ class Worker(Thread):
 
     def run(self):
         self.work = True
-        try:
-            while self.work:
-
+        
+        while self.work:
+            try:
                 t0 = datetime.datetime.now()
 
                 with self.queue_lock:
@@ -87,18 +87,13 @@ class Worker(Thread):
                 debug_output("Finished analyzing {} in {}".format(elt['value'], t-t0))
                 with self.queue_lock:
                     self.engine.elements_queue.task_done()
-
-            debug_output("[%s | PID %s] EXITING\n" % (self.name, os.getpid()), type='error')
-            with self.queue_lock:
-                self.engine.elements_queue.task_done()
-            return
-
-        except Exception, e:
-            debug_output("An error occured in [%s | PID %s]: %s\nelt info:\n%s" % (self.name, os.getpid(), e, repr(elt)), type="error")
-            print traceback.format_exc()
-            with self.queue_lock:
-                self.engine.elements_queue.task_done()
-            return
+            except Exception, e:
+                debug_output("An error occured in [%s | PID %s]: %s\nelt info:\n%s" % (self.name, os.getpid(), e, repr(elt)), type="error")
+                print traceback.format_exc()
+        debug_output("[%s | PID %s] EXITING\n" % (self.name, os.getpid()), type='error')
+        with self.queue_lock:
+            self.engine.elements_queue.task_done()
+        return
 
     def stop(self):
         self.work = False
