@@ -70,7 +70,7 @@ class Worker(Thread):
                 if elt == "BAIL":
                     debug_output("[%s | PID %s] GOT BAIL MESSAGE" % (self.name, os.getpid()), type='debug')
                     self.work = False
-                    continue
+                    break
 
                 with self.queue_lock:
                     debug_output("[%s | PID %s] Started work on %s %s. Queue size: %s" % (self.name, os.getpid(), elt['type'], elt['value'], self.engine.elements_queue.qsize()), type='analytics')
