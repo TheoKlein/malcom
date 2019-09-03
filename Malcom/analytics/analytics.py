@@ -329,7 +329,8 @@ class Analytics(Process):
                     for i in range(self.max_workers):
                         debug_output("PUT BAIL")
                         self.elements_queue.put(pickle.dumps("BAIL"))
-
+                    
+                    debug_output("REMAINING_QUEUE %s" % self.elements_queue.qsize())
                     self.elements_queue.join()
 
                     debug_output("Workers have joined")
