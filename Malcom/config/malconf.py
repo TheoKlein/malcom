@@ -1,5 +1,7 @@
 import ConfigParser
 import os
+from ConfigParser import SafeConfigParser
+
 import netifaces as ni
 
 
@@ -50,7 +52,8 @@ class MalcomSetup(dict):
 
     def parse_config_file(self, filename):
 
-        config = ConfigParser.ConfigParser(allow_no_value=True)
+        config = SafeConfigParser(os.environ, allow_no_value=True)
+        # config = ConfigParser.ConfigParser(allow_no_value=True)
         config.read(filename)
 
         if config.has_section('web'):
