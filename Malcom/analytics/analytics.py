@@ -331,6 +331,10 @@ class Analytics(Process):
                         self.elements_queue.put(pickle.dumps(elt))
                         total_elts += 1
 
+                    for i in range(self.max_workers):
+                        debug_output("PUT BAIL")
+                        self.elements_queue.put(pickle.dumps("BAIL"))
+
                     self.elements_queue.join()
 
                     debug_output("Workers have joined")
@@ -340,9 +344,6 @@ class Analytics(Process):
                         self.bulk_functions()
                         self.active = False
 
-            for i in range(self.max_workers):
-                debug_output("PUT BAIL")
-                self.elements_queue.put(pickle.dumps("BAIL"))
             self.elements_queue.join()
 
             now = datetime.datetime.utcnow()
