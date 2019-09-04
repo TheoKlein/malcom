@@ -70,7 +70,7 @@ class Worker(Thread):
                 if elt == "BAIL":
                     debug_output("[%s | PID %s] GOT BAIL MESSAGE" % (self.name, os.getpid()), type='debug')
                     self.work = False
-                    break
+                    continue
 
                 with self.queue_lock:
                     debug_output("[%s | PID %s] Started work on %s %s. Queue size: %s" % (self.name, os.getpid(), elt['type'], elt['value'], self.engine.elements_queue.qsize()), type='analytics')
@@ -85,8 +85,8 @@ class Worker(Thread):
 
                 t = datetime.datetime.now()
                 debug_output("Finished analyzing {} in {}".format(elt['value'], t-t0))
-                with self.queue_lock:
-                    self.engine.elements_queue.task_done()
+                # with self.queue_lock:
+                #     self.engine.elements_queue.task_done()
             except Exception, e:
                 debug_output("An error occured in [%s | PID %s]: %s\nelt info:\n%s" % (self.name, os.getpid(), e, repr(elt)), type="error")
                 print traceback.format_exc()
@@ -330,13 +330,29 @@ class Analytics(Process):
                         debug_output("PUT BAIL")
                         self.elements_queue.put(pickle.dumps("BAIL"))
                     
-                    debug_output("REMAINING_QUEUE %s" % self.elements_queue.qsize())
-                    self.elements_queue.join()
+                    while True:
+                        for worker in self.workers:
+                            worker.handled = False
+                            if not worker.isAlive():
+                                worker.handled = True
+                                
+                        alive_workers = [t for t in self.workers if not t.handled]
+                        if len(alive_workers) != 0:
+                            debug_output("Remaining %s workers alive" % len(alive_workers))
+                        else:    
+                            debug_output("Remaining queue size: %s" % self.elements_queue.qsize())
+                        if len(alive_workers) == 0 and self.elements_queue.qsize() == 0:
+                            with self.elements_queue.mutex:
+                                self.elements_queue.queue.clear()
+                            break
+                        time.sleep(1)
 
                     debug_output("Workers have joined")
+                    # self.elements_queue.join()
 
                     # regroup ASN analytics and ADNS analytics
                     if self.run_analysis:
+                        debug_output("Go into bulk_function")
                         self.bulk_functions()
                         self.active = False
 
