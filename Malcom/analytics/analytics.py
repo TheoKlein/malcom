@@ -300,6 +300,11 @@ class Analytics(Process):
                 query = {'next_analysis': {'$lt': datetime.datetime.utcnow()}, 'tags': {"$in": ['search']}}
                 results = [r for r in self.data.elements.find(query)]
 
+                # let new elements analyze first
+                query = {'last_analysis': None}
+                if self.data.elements.find(query).count() > 0:
+                    results += [r for r in self.data.elements.find(query).sort([("date_created", pymongo.ASCENDING)]).limit(10000)]
+
                 query = {'next_analysis': {'$lt': datetime.datetime.utcnow()}}
                 if self.setup['SKIP_TAGS']:
                     query['tags'] = {"$nin": self.setup['SKIP_TAGS']}
