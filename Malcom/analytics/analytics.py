@@ -7,6 +7,7 @@ from multiprocessing import Process  # JoinableQueue as Queue, Lock
 import traceback
 import Queue as Queue
 from threading import Thread, Lock
+import pymongo
 
 from Malcom.auxiliary.toolbox import *
 from Malcom.model.model import Model
@@ -303,7 +304,7 @@ class Analytics(Process):
                 if self.setup['SKIP_TAGS']:
                     query['tags'] = {"$nin": self.setup['SKIP_TAGS']}
 
-                results += [r for r in self.data.elements.find(query).skip(i).limit(batch_size)]
+                results += [r for r in self.data.elements.find(query).sort([("date_created", pymongo.ASCENDING)]).skip(i).limit(batch_size)]
                 total_elts = 0
 
                 if len(results) > 0:
