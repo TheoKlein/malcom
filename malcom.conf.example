@@ -8,9 +8,9 @@ listen_port = 8080
 auth = false
 
 [feeds]
-activated = %(FEED_ACTIVATED)s
+activated = true
 feeds_dir = feeds
-scheduler = %(FEED_ACTIVATED)s
+scheduler = true
 exports_dir = exports
 
 [analytics]
