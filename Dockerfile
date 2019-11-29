@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:14.04
 MAINTAINER Thomas Chopitea <tomchop@gmail.com>
 
 # update and install dependencies
