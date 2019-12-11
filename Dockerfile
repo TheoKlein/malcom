@@ -29,7 +29,7 @@ RUN pip install -r requirements.txt
 COPY ./ /opt/malcom
 
 RUN cp malcom.conf.example malcom.conf && \
-    echo service mongodb start --upgrade > start.sh && \
+    echo service mongodb start > start.sh && \
     echo service redis-server start >> start.sh && \
     echo ./malcom.py -c malcom.conf >> start.sh && \
     chmod +x start.sh
