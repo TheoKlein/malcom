@@ -32,7 +32,6 @@ RUN cp malcom.conf.example malcom.conf && \
     echo service mongodb start --upgrade > start.sh && \
     echo service redis-server start >> start.sh && \
     echo ./malcom.py -c malcom.conf >> start.sh && \
-    chmod +x start.sh && \
-    sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongodb.conf
+    chmod +x start.sh
 CMD ./start.sh
 
